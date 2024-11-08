@@ -1,0 +1,47 @@
+import socket
+import threading
+
+# Server configuration
+HOST = '127.0.0.1'
+PORT = 12345
+
+# List to hold connected clients
+clients = []
+
+# Broadcast message to all clients
+def broadcast(message, current_client):
+    for client in clients:
+        if client != current_client:
+            try:
+                client.send(message)
+            except:
+                clients.remove(client)
+
+# Handle individual client
+def handle_client(client):
+    while True:
+        try:
+            message = client.recv(1024)
+            if message:
+                print(f"Received: {message.decode('utf-8')}")
+                broadcast(message, client)
+        except:
+            clients.remove(client)
+            client.close()
+            break
+
+# Start the server
+def start_server():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((HOST, PORT))
+    server.listen()
+    print(f"Server running on {HOST}:{PORT}")
+
+    while True:
+        client, address = server.accept()
+        print(f"New connection: {address}")
+        clients.append(client)
+        threading.Thread(target=handle_client, args=(client,)).start()
+
+if __name__ == "__main__":
+    start_server()
